@@ -365,7 +365,7 @@ func (c *HelmClient) UpgradeHelmReleaseIfChanged(ctx context.Context, restConfig
 		return nil, errors.Errorf("failed to load request chart %s", chartName)
 	}
 
-	shouldUpgrade, err := shouldUpgradeHelmRelease(ctx, *existing, chartRequested, vals)
+	shouldUpgrade, err := shouldUpgradeHelmRelease(ctx, *existing, chartRequested, vals, spec.ReleaseDrift)
 	if err != nil {
 		return nil, err
 	}
@@ -398,8 +398,12 @@ func writeValuesToFile(ctx context.Context, spec addonsv1alpha1.HelmReleaseProxy
 }
 
 // shouldUpgradeHelmRelease determines if a Helm release should be upgraded.
-func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release, chartRequested *chart.Chart, values map[string]interface{}) (bool, error) {
+func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release, chartRequested *chart.Chart, values map[string]interface{}, releaseDrift bool) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
+	if releaseDrift {
+		klog.V(2).Info("release drift is enabled. Forcing Helm release update")
+		return true, nil
+	}
 
 	if existing.Chart == nil || existing.Chart.Metadata == nil {
 		return false, errors.New("Failed to resolve chart version of existing release")

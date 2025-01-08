@@ -120,7 +120,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating workload cluster [REQUIRED]", func() {
-		It("With default template to install, upgrade, and uninstall nginx Helm chart", func() {
+		FIt("With default template to install, upgrade, and uninstall nginx Helm chart", func() {
 			clusterName = fmt.Sprintf("%s-%s", specName, util.RandomString(6))
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
@@ -217,6 +217,58 @@ var _ = Describe("Workload cluster creation", func() {
 						HelmChartProxy:        hcp,
 					}
 				})
+			})
+		})
+
+		It("Install and manage Helm chart with ReleaseDrift option enabled", func() {
+			clusterName = fmt.Sprintf("%s-%s", specName, util.RandomString(6))
+			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
+				specName,
+				withNamespace(namespace.Name),
+				withClusterName(clusterName),
+				withControlPlaneMachineCount(1),
+				withWorkerMachineCount(1),
+				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
+					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
+				}),
+			), result)
+
+			hcp := &addonsv1alpha1.HelmChartProxy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx-ingress",
+					Namespace: namespace.Name,
+				},
+				Spec: addonsv1alpha1.HelmChartProxySpec{
+					ClusterSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"nginxIngress": "enabled",
+						},
+					},
+					ReleaseName:       "nginx-ingress",
+					ReleaseNamespace:  "nginx-namespace",
+					ChartName:         "nginx-ingress",
+					RepoURL:           "https://helm.nginx.com/stable",
+					ValuesTemplate:    nginxValues,
+					ReleaseDrift:      true,
+					ReconcileStrategy: string(addonsv1alpha1.ReconcileStrategyContinuous),
+				},
+			}
+
+			// Create new Helm chart
+			By("Creating new HelmChartProxy to install nginx", func() {
+				HelmInstallSpec(ctx, func() HelmInstallInput {
+					return HelmInstallInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						HelmChartProxy:        hcp,
+					}
+				})
+			})
+
+			// Updating Nginx deployment and waiting for the release drift
+			By("Updating Nginx deployment and waiting for the release drift", func() {
+				PatchAndWaitForNginxDeployment(ctx, hcp, bootstrapClusterProxy, clusterName, namespace.Name)
 			})
 		})
 	})

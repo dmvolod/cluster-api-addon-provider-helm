@@ -175,7 +175,6 @@ func prettyPrint(v interface{}) string {
 }
 
 func getHelmActionConfigForTests(_ context.Context, workloadClusterProxy framework.ClusterProxy, releaseNamespace string) *helmAction.Configuration {
-
 	workloadKubeconfigPath := workloadClusterProxy.GetKubeconfigPath()
 
 	settings := helmCli.New()
