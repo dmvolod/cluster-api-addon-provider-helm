@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	addonsv1alpha1 "sigs.k8s.io/cluster-api-addon-provider-helm/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
+	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -72,7 +72,7 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(clusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. clusterctlConfigPath must be an existing file when calling %s spec", specName)
 		Expect(bootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(os.MkdirAll(artifactFolder, 0o755)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
-		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.KubernetesVersion))
+		Expect(e2eConfig.Variables).To(HaveKey(capie2e.KubernetesVersion))
 
 		// CLUSTER_NAME and CLUSTER_NAMESPACE allows for testing existing clusters.
 		// If CLUSTER_NAMESPACE is set, don't generate a new prefix. Otherwise,
