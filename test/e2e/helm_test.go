@@ -120,7 +120,7 @@ var _ = Describe("Workload cluster creation", func() {
 	})
 
 	Context("Creating workload cluster [REQUIRED]", func() {
-		FIt("With default template to install, upgrade, and uninstall nginx Helm chart", func() {
+		It("With default template to install, upgrade, and uninstall nginx Helm chart", func() {
 			clusterName = fmt.Sprintf("%s-%s", specName, util.RandomString(6))
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
@@ -220,7 +220,7 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 		})
 
-		It("Install and manage Helm chart with ReleaseDrift option enabled", func() {
+		FIt("Install and manage Helm chart with ReleaseDrift option enabled", func() {
 			clusterName = fmt.Sprintf("%s-%s", specName, util.RandomString(6))
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,

@@ -53,6 +53,13 @@ var _ Client = (*HelmClient)(nil)
 
 type HelmClient struct{}
 
+type HelmInstallOverride struct {
+	DryRun       bool
+	DisableHooks bool
+	SkipCRDs     bool
+	IsUpgrade    bool
+}
+
 // GetActionConfig returns a new Helm action configuration.
 func GetActionConfig(ctx context.Context, namespace string, config *rest.Config) (*helmAction.Configuration, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -105,7 +112,7 @@ func (c *HelmClient) InstallOrUpgradeHelmRelease(ctx context.Context, restConfig
 	existingRelease, err := c.GetHelmRelease(ctx, restConfig, spec)
 	if err != nil {
 		if errors.Is(err, helmDriver.ErrReleaseNotFound) {
-			return c.InstallHelmRelease(ctx, restConfig, credentialsPath, caFilePath, spec)
+			return c.InstallHelmRelease(ctx, restConfig, credentialsPath, caFilePath, spec, nil)
 		}
 
 		return nil, err
@@ -115,7 +122,7 @@ func (c *HelmClient) InstallOrUpgradeHelmRelease(ctx context.Context, restConfig
 }
 
 // generateHelmInstallConfig generates default helm install config using helmOptions specified in HCP CR spec.
-func generateHelmInstallConfig(actionConfig *helmAction.Configuration, helmOptions *addonsv1alpha1.HelmOptions) *helmAction.Install {
+func generateHelmInstallConfig(actionConfig *helmAction.Configuration, helmOptions *addonsv1alpha1.HelmOptions, overrideOptions *HelmInstallOverride) *helmAction.Install {
 	installClient := helmAction.NewInstall(actionConfig)
 	installClient.CreateNamespace = true
 	if actionConfig.RegistryClient != nil {
@@ -137,6 +144,12 @@ func generateHelmInstallConfig(actionConfig *helmAction.Configuration, helmOptio
 	installClient.Atomic = helmOptions.Atomic
 	installClient.IncludeCRDs = helmOptions.Install.IncludeCRDs
 	installClient.CreateNamespace = helmOptions.Install.CreateNamespace
+	if overrideOptions != nil {
+		installClient.SkipCRDs = overrideOptions.SkipCRDs
+		installClient.DisableHooks = overrideOptions.DisableHooks
+		installClient.DryRun = overrideOptions.DryRun
+		installClient.IsUpgrade = overrideOptions.IsUpgrade
+	}
 
 	return installClient
 }
@@ -172,7 +185,7 @@ func generateHelmUpgradeConfig(actionConfig *helmAction.Configuration, helmOptio
 }
 
 // InstallHelmRelease installs a Helm release.
-func (c *HelmClient) InstallHelmRelease(ctx context.Context, restConfig *rest.Config, credentialsPath, caFilePath string, spec addonsv1alpha1.HelmReleaseProxySpec) (*helmRelease.Release, error) {
+func (c *HelmClient) InstallHelmRelease(ctx context.Context, restConfig *rest.Config, credentialsPath, caFilePath string, spec addonsv1alpha1.HelmReleaseProxySpec, overrideOptions *HelmInstallOverride) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, restConfig)
@@ -196,7 +209,7 @@ func (c *HelmClient) InstallHelmRelease(ctx context.Context, restConfig *rest.Co
 		return nil, err
 	}
 
-	installClient := generateHelmInstallConfig(actionConfig, &spec.Options)
+	installClient := generateHelmInstallConfig(actionConfig, &spec.Options, overrideOptions)
 	installClient.RepoURL = repoURL
 	installClient.Version = spec.Version
 	installClient.Namespace = spec.ReleaseNamespace
@@ -253,6 +266,18 @@ func (c *HelmClient) InstallHelmRelease(ctx context.Context, restConfig *rest.Co
 	log.V(1).Info("Installing with Helm", "chart", spec.ChartName, "repo", spec.RepoURL)
 
 	return installClient.RunWithContext(ctx, chartRequested, vals) // Can return error and a release
+}
+
+// TemplateHelmRelease generate a template for the Helm release.
+func (c *HelmClient) TemplateHelmRelease(ctx context.Context, restConfig *rest.Config, credentialsPath, caFilePath string, spec addonsv1alpha1.HelmReleaseProxySpec) (*helmRelease.Release, error) {
+	overrideOptions := &HelmInstallOverride{
+		DryRun:       true,
+		DisableHooks: true,
+		SkipCRDs:     true,
+		IsUpgrade:    true,
+	}
+
+	return c.InstallHelmRelease(ctx, restConfig, credentialsPath, caFilePath, spec, overrideOptions)
 }
 
 // newDefaultRegistryClient creates registry client object with default config which can be used to install/upgrade helm charts.
