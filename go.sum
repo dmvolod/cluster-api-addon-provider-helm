@@ -104,8 +104,8 @@ github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2 h1:aB
 github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2/go.mod h1:WHNsWjnIn2V1LYOrME7e8KxSeKunYHsxEm4am0BUtcI=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
-github.com/dmvolod/helm-diff/v3 v3.9.10-fix.1 h1:6gFs3/T6Y2iNJI1qviENgTcq7srxq1QpIQ7ZvvNTeRU=
-github.com/dmvolod/helm-diff/v3 v3.9.10-fix.1/go.mod h1:d/Osu8Gi0QVeEo/+9VGrzpdAv+F2l3Xi0G/8PgZf+o0=
+github.com/dmvolod/helm-diff/v3 v3.9.10-fix.2 h1:z0X2H57YK3DrYhFIbs+nLWDHy4eBgyIKOZ/qU4VObWA=
+github.com/dmvolod/helm-diff/v3 v3.9.10-fix.2/go.mod h1:d/Osu8Gi0QVeEo/+9VGrzpdAv+F2l3Xi0G/8PgZf+o0=
 github.com/docker/cli v25.0.5+incompatible h1:3Llw3kcE1gOScEojA247iDD+p1l9hHeC7H3vf3Zd5fk=
 github.com/docker/cli v25.0.5+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/distribution v2.8.3+incompatible h1:AtKxIZ36LoNK51+Z6RpzLpddBirtxJnzDrHLEKxTAYk=

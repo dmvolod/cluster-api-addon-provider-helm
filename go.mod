@@ -225,6 +225,6 @@ require (
 )
 
 replace (
-	github.com/databus23/helm-diff/v3 => github.com/dmvolod/helm-diff/v3 v3.9.10-fix.1
+	github.com/databus23/helm-diff/v3 => github.com/dmvolod/helm-diff/v3 v3.9.10-fix.2
 	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.9.3
 )

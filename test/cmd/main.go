@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"log"
+	"os"
 
 	"github.com/databus23/helm-diff/v3/diff"
 	"github.com/databus23/helm-diff/v3/manifest"
@@ -43,22 +42,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	original, err := actionConfig.KubeClient.Build(bytes.NewBuffer([]byte(release.Manifest)), false)
-	if err != nil {
-		log.Fatal(err)
-	}
-	target, err := actionConfig.KubeClient.Build(bytes.NewBuffer([]byte(install.Manifest)), false)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	releaseManifest, installManifest, err := manifest.Generate(original, target)
+	releaseManifest, installManifest, err := manifest.Generate(actionConfig, []byte(release.Manifest), []byte(install.Manifest))
 	if err != nil {
 		log.Fatal(err)
 	}
 	currentSpecs := manifest.Parse(string(releaseManifest), hrpSpec.ReleaseNamespace, false, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
 	newSpecs := manifest.Parse(string(installManifest), hrpSpec.ReleaseNamespace, false, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
 	diffOptions := &diff.Options{}
-	seenAnyChanges := diff.Manifests(currentSpecs, newSpecs, diffOptions, io.Discard)
+	seenAnyChanges := diff.Manifests(currentSpecs, newSpecs, diffOptions, os.Stdout)
 	println(seenAnyChanges)
 }
