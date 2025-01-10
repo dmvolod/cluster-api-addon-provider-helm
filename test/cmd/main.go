@@ -46,8 +46,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	currentSpecs := manifest.Parse(string(releaseManifest), hrpSpec.ReleaseNamespace, false, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
-	newSpecs := manifest.Parse(string(installManifest), hrpSpec.ReleaseNamespace, false, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+	currentSpecs := manifest.Parse(string(releaseManifest), hrpSpec.ReleaseNamespace, true, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+	newSpecs := manifest.Parse(string(installManifest), hrpSpec.ReleaseNamespace, true, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
 	diffOptions := &diff.Options{}
 	seenAnyChanges := diff.Manifests(currentSpecs, newSpecs, diffOptions, os.Stdout)
 	println(seenAnyChanges)

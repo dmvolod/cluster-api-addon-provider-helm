@@ -19,10 +19,13 @@ package internal
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path"
 
+	"github.com/databus23/helm-diff/v3/diff"
+	"github.com/databus23/helm-diff/v3/manifest"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -390,7 +393,7 @@ func (c *HelmClient) UpgradeHelmReleaseIfChanged(ctx context.Context, restConfig
 		return nil, errors.Errorf("failed to load request chart %s", chartName)
 	}
 
-	shouldUpgrade, err := shouldUpgradeHelmRelease(ctx, *existing, chartRequested, vals, spec.ReleaseDrift)
+	shouldUpgrade, err := c.shouldUpgradeHelmRelease(ctx, restConfig, credentialsPath, caFilePath, *existing, chartRequested, vals, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -423,12 +426,8 @@ func writeValuesToFile(ctx context.Context, spec addonsv1alpha1.HelmReleaseProxy
 }
 
 // shouldUpgradeHelmRelease determines if a Helm release should be upgraded.
-func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release, chartRequested *chart.Chart, values map[string]interface{}, releaseDrift bool) (bool, error) {
+func (c *HelmClient) shouldUpgradeHelmRelease(ctx context.Context, restConfig *rest.Config, credentialsPath, caFilePath string, existing helmRelease.Release, chartRequested *chart.Chart, values map[string]interface{}, spec addonsv1alpha1.HelmReleaseProxySpec) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if releaseDrift {
-		klog.V(2).Info("release drift is enabled. Forcing Helm release update")
-		return true, nil
-	}
 
 	if existing.Chart == nil || existing.Chart.Metadata == nil {
 		return false, errors.New("Failed to resolve chart version of existing release")
@@ -456,7 +455,28 @@ func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release,
 		return false, errors.Wrapf(err, "failed to new release values")
 	}
 
-	return !cmp.Equal(oldValues, newValues), nil
+	if !cmp.Equal(oldValues, newValues) {
+		return true, nil
+	}
+
+	if spec.ReleaseDrift {
+		klog.V(2).Info("release drift is enabled. Trying to detect release diff")
+		install, err := c.TemplateHelmRelease(ctx, restConfig, credentialsPath, caFilePath, spec)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to generate release template")
+		}
+		_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, restConfig)
+		releaseManifest, installManifest, err := manifest.Generate(actionConfig, []byte(existing.Manifest), []byte(install.Manifest))
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to generate existing and installing release manifests")
+		}
+		currentSpecs := manifest.Parse(string(releaseManifest), spec.ReleaseNamespace, true, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+		newSpecs := manifest.Parse(string(installManifest), spec.ReleaseNamespace, true, manifest.Helm3TestHook, manifest.Helm2TestSuccessHook)
+
+		return diff.Manifests(currentSpecs, newSpecs, &diff.Options{}, io.Discard), nil
+	}
+
+	return false, nil
 }
 
 // GetHelmRelease returns a Helm release if it exists.
