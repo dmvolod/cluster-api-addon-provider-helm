@@ -6,9 +6,6 @@
 <img src="https://img.shields.io/badge/join%20slack-%23cluster--api-brightgreen"></a>
 </p>
 
-helm template --is-upgrade --no-hooks --skip-crds my-release nginx-stable/nginx-ingress | kubectl diff --server-side=false -f -
-
-
 https://helm.nginx.com/
 =======================
 helm install my-release nginx-stable/nginx-ingress
