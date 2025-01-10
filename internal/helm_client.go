@@ -455,8 +455,8 @@ func (c *HelmClient) shouldUpgradeHelmRelease(ctx context.Context, restConfig *r
 		return false, errors.Wrapf(err, "failed to new release values")
 	}
 
-	if !cmp.Equal(oldValues, newValues) {
-		return true, nil
+	if cmp.Equal(oldValues, newValues) {
+		return false, nil
 	}
 
 	if spec.ReleaseDrift {
@@ -476,7 +476,7 @@ func (c *HelmClient) shouldUpgradeHelmRelease(ctx context.Context, restConfig *r
 		return diff.Manifests(currentSpecs, newSpecs, &diff.Options{}, io.Discard), nil
 	}
 
-	return false, nil
+	return true, nil
 }
 
 // GetHelmRelease returns a Helm release if it exists.
